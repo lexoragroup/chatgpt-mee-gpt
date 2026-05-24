@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MEE Grader Setup - Custom GPT Walkthrough</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100%; }
+  body { background: #0d0f12; color: #e7e7e2; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  button, input, textarea { font: inherit; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  .wrap { min-height: 100vh; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tab { border: 1px solid #293036; background: #15191e; color: #8c969f; border-radius: 8px; padding: 8px 13px; font-size: 12px; cursor: pointer; }
+  .tab.active { background: #19c37d; border-color: #19c37d; color: #06130d; font-weight: 800; }
+  .browser { height: 520px; border: 1px solid #263039; border-radius: 14px; overflow: hidden; background: #101418; box-shadow: 0 32px 80px rgba(0,0,0,.42); }
+  .chrome { height: 38px; background: #0f1216; border-bottom: 1px solid #222b33; display: flex; align-items: center; gap: 6px; padding: 0 14px; }
+  .dot { width: 11px; height: 11px; border-radius: 99px; }
+  .url { flex: 1; text-align: center; color: #56616b; font-size: 12px; }
+  .app { height: calc(100% - 38px); display: flex; overflow: hidden; }
+  .side { width: 238px; background: #111418; border-right: 1px solid #222b33; display: flex; flex-direction: column; flex-shrink: 0; }
+  .brand { padding: 16px 14px 8px; display: flex; align-items: center; gap: 9px; }
+  .mark { width: 28px; height: 28px; border-radius: 7px; background: #19c37d; color: #07130e; display: grid; place-items: center; font-weight: 900; }
+  .new-chat { margin: 4px 10px 8px; border: 1px solid #2b343d; border-radius: 9px; padding: 8px 12px; color: #a8b0b7; font-size: 13px; }
+  .nav-label { color: #67727b; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; font-weight: 800; padding: 12px 14px 5px; }
+  .row { margin: 2px 8px; padding: 8px 10px; border-radius: 9px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6f7982; }
+  .row.active { background: #183227; border: 1px solid #24513e; color: #e9fff4; }
+  .profile { margin-top: auto; padding: 12px 10px; border-top: 1px solid #20272e; display: flex; align-items: center; gap: 8px; color: #7c878f; font-size: 13px; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: #20362d; color: #19c37d; display: grid; place-items: center; font-weight: 800; }
+  .main { flex: 1; background: #161b20; overflow: hidden; display: flex; flex-direction: column; }
+  .top { padding: 14px 22px; border-bottom: 1px solid #222b33; display: flex; align-items: center; gap: 9px; }
+  .content { flex: 1; overflow: auto; padding: 20px 26px; }
+  .grid { display: grid; grid-template-columns: 335px 1fr; height: 100%; }
+  .form { border-right: 1px solid #222b33; padding: 18px; overflow: auto; }
+  .preview { padding: 18px 22px; overflow: auto; }
+  .card { background: #1c2228; border: 1px solid #2b343d; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .card.hot { border: 2px solid #19c37d; box-shadow: 0 0 0 4px rgba(25,195,125,.12); }
+  .label { color: #9aa5ad; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 7px; }
+  .field { background: #11161a; border: 1px solid #2d3740; border-radius: 9px; padding: 10px 12px; color: #e7e7e2; font-size: 13px; margin-bottom: 12px; line-height: 1.45; }
+  .field.hot { border: 2px solid #19c37d; box-shadow: 0 0 0 4px rgba(25,195,125,.13); }
+  .badge { background: #19c37d; color: #07130e; font-size: 10px; font-weight: 900; border-radius: 5px; padding: 2px 7px; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; line-height: 1.65; color: #bac3ca; }
+  .file { display: flex; align-items: center; gap: 10px; padding: 9px 10px; background: #11161a; border: 1px solid #27313a; border-radius: 9px; margin-bottom: 7px; }
+  .switch { width: 42px; height: 24px; border-radius: 99px; background: #2b343d; padding: 3px; display: flex; justify-content: flex-end; }
+  .switch.off { justify-content: flex-start; }
+  .knob { width: 18px; height: 18px; border-radius: 99px; background: #fff; }
+  .chat { max-width: 760px; margin: 0 auto; }
+  .bubble { display: flex; gap: 10px; margin-bottom: 16px; }
+  .assistant-mark { width: 28px; height: 28px; border-radius: 7px; background: #19c37d; color: #07130e; display: grid; place-items: center; font-weight: 900; flex-shrink: 0; }
+  .user-mark { width: 28px; height: 28px; border-radius: 50%; background: #20362d; color: #19c37d; display: grid; place-items: center; font-weight: 900; flex-shrink: 0; }
+  .bubble-body { flex: 1; color: #d4dbe0; font-size: 13px; line-height: 1.65; }
+  .summary { background: #11161a; border: 2px solid #19c37d; border-radius: 12px; padding: 14px 16px; }
+  .btn { border-radius: 8px; padding: 8px 16px; font-size: 12px; border: 1px solid #34404a; background: transparent; color: #96a1aa; }
+  .btn.primary { background: #19c37d; border-color: #19c37d; color: #07130e; font-weight: 800; }
+  .footer-note { text-align: center; color: #19c37d; font-size: 12px; font-weight: 750; }
+  @media (max-width: 760px) {
+    .wrap { padding: 12px; }
+    .browser { height: 580px; }
+    .side { width: 160px; }
+    .grid { grid-template-columns: 1fr; }
+    .preview { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="tabs" id="tabs"></div>
+  <div class="browser">
+    <div class="chrome">
+      <span class="dot" style="background:#ff5f57"></span>
+      <span class="dot" style="background:#febc2e"></span>
+      <span class="dot" style="background:#28c840"></span>
+      <div class="url">chatgpt.com/gpts/editor</div>
+    </div>
+    <div class="app" id="app"></div>
+  </div>
+  <div class="footer-note" id="caption"></div>
+</div>
+<script>
+const steps = [
+  ["Step 1", "Open the GPT Builder"],
+  ["Step 2", "Fill in Configure Fields"],
+  ["Step 3", "Upload Knowledge + Capabilities"],
+  ["Step 4", "Save and Set to Private"],
+  ["Step 5", "Use One Essay Per Chat"]
+];
+let active = 0;
+
+function sidebar(activeRow="Explore GPTs") {
+  const rows = ["ChatGPT", "Explore GPTs", "MEE Grader", "Bar Exam Notes"];
+  return `
+  <aside class="side">
+    <div class="brand"><div class="mark">◎</div><strong>ChatGPT</strong></div>
+    <div class="new-chat">+ New chat</div>
+    <div class="nav-label">Workspace</div>
+    ${rows.map(r => `<div class="row ${r===activeRow ? "active" : ""}">${r==="MEE Grader" ? "📝" : r==="Explore GPTs" ? "🔎" : "💬"} <span>${r}</span></div>`).join("")}
+    <div class="nav-label">Recents</div>
+    <div class="row">ConLaw essay feedback</div>
+    <div class="row">Contracts issue spotting</div>
+    <div class="profile"><div class="avatar">Y</div><span>Your Lawyer Bestie</span></div>
+  </aside>`;
+}
+
+function step1() {
+  return `
+  ${sidebar("Explore GPTs")}
+  <main class="main">
+    <div class="top">🔎 <strong>Explore GPTs</strong><span style="margin-left:auto"><button class="btn primary">Create</button></span></div>
+    <section class="content">
+      <div class="card hot" style="max-width:760px;margin:30px auto">
+        <div class="label" style="color:#19c37d">Where to click</div>
+        <h2 style="font-size:22px;margin-bottom:8px">Create a custom GPT</h2>
+        <p style="color:#a8b0b7;font-size:14px;line-height:1.6;margin-bottom:18px">Go to ChatGPT, click <strong>Explore GPTs</strong>, then click <strong>Create</strong>. Use the <strong>Configure</strong> tab for manual control.</p>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+          ${["Explore GPTs", "Create", "Configure", "Manual setup"].map((x,i)=>`<div class="field ${i===2?"hot":""}" style="text-align:center">${x}</div>`).join("")}
+        </div>
+      </div>
+    </section>
+  </main>`;
+}
+
+function step2() {
+  return `
+  ${sidebar("MEE Grader")}
+  <main class="main">
+    <div class="top">📝 <strong>New GPT</strong><span style="color:#56616b">› Configure</span></div>
+    <div class="grid">
+      <section class="form">
+        <div class="card hot">
+          <div class="label">Name</div>
+          <div class="field hot">MEE Grader (or whatever you'll recognize)</div>
+          <div class="label">Description</div>
+          <div class="field">Grades MEE essays 1-6 UBE scale. Tracks errors. Calibrated to 270. One essay per chat.</div>
+          <div class="label">Conversation starters</div>
+          <div class="field">Grade my MEE essay - DC bar exam.</div>
+          <div class="field">Give me my progress report.</div>
+          <div class="field">What subject area am I weakest in?</div>
+        </div>
+      </section>
+      <section class="preview">
+        <div class="card hot">
+          <div class="label" style="color:#19c37d">Instructions</div>
+          <div class="mono">
+            <span style="color:#79d6a5">You are a private MEE essay grader</span> for a UBE bar exam retaker. You grade on a <strong style="color:#19c37d">1-6 scale</strong> calibrated to a <strong style="color:#19c37d">270 UBE passing score</strong>.<br><br>
+            Ask three questions before grading: jurisdiction, subject area, timed attempt.<br><br>
+            Use exact sections: ISSUE SPOTTING, RULE STATEMENTS, APPLICATION ANALYSIS, ORGANIZATION AND STRUCTURE, OVERALL SCORE, SCORE-MOVING ACTIONS, SESSION SUMMARY.
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>`;
+}
+
+function step3() {
+  const toggles = [
+    ["Memory / personalization, if available", true],
+    ["Web browsing", false],
+    ["Image generation", false],
+    ["Code interpreter", false]
+  ];
+  return `
+  ${sidebar("MEE Grader")}
+  <main class="main">
+    <div class="top">📝 <strong>MEE Grader</strong><span style="color:#56616b">› Configure</span></div>
+    <section class="content" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card hot">
+        <div class="label" style="color:#19c37d">Knowledge</div>
+        ${["NCBE MEE Subject Matter Outline", "NCBE Sample MEE Questions", "Representative Good Answers", "Washington State MEE Rubric"].map(f => `<div class="file"><span>📄</span><div style="flex:1">${f}</div><strong style="color:#19c37d">✓</strong></div>`).join("")}
+      </div>
+      <div class="card hot">
+        <div class="label" style="color:#19c37d">Capabilities</div>
+        ${toggles.map(t => `<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #293036;padding:12px 0"><span style="color:#d7dee3;font-size:13px">${t[0]}</span><div class="switch ${t[1] ? "" : "off"}" style="background:${t[1] ? "#19c37d" : "#2b343d"}"><span class="knob"></span></div></div>`).join("")}
+        <p style="color:#84909a;font-size:12px;line-height:1.55;margin-top:12px">Use the uploaded files as the anchor. Keep browsing, image generation, and code interpreter off for this grader workflow.</p>
+      </div>
+    </section>
+  </main>`;
+}
+
+function step4() {
+  return `
+  ${sidebar("MEE Grader")}
+  <main class="main">
+    <div class="top">📝 <strong>MEE Grader</strong><span style="margin-left:auto"><button class="btn primary">Save</button></span></div>
+    <section class="content">
+      <div class="card hot" style="max-width:520px;margin:35px auto">
+        <div class="label" style="color:#19c37d">Publish settings</div>
+        <h2 style="font-size:20px;margin-bottom:10px">Set visibility to Only me</h2>
+        <div class="field hot">Only me <span style="float:right;color:#19c37d">Selected</span></div>
+        <div class="field">Anyone with a link</div>
+        <div class="field">GPT Store</div>
+        <p style="color:#a8b0b7;font-size:13px;line-height:1.6;margin-top:10px">Keep your essay grader private. This is for your study workflow, your uploaded files, and your own essays.</p>
+      </div>
+    </section>
+  </main>`;
+}
+
+function step5() {
+  return `
+  ${sidebar("MEE Grader")}
+  <main class="main">
+    <div class="top">📝 <strong>MEE Grader</strong><span style="color:#56616b">› New chat</span></div>
+    <section class="content chat">
+      <div class="bubble"><div class="assistant-mark">◎</div><div class="bubble-body">Before I grade, I need three things: jurisdiction, subject area, and whether this was timed.</div></div>
+      <div class="bubble" style="justify-content:flex-end"><div class="bubble-body" style="max-width:70%;background:#20272e;border:1px solid #303a44;border-radius:12px;padding:12px">DC bar. Contracts. Timed - 30 minutes.<br><span style="color:#84909a">[essay pasted below]</span></div><div class="user-mark">Y</div></div>
+      <div class="bubble"><div class="assistant-mark">◎</div><div class="bubble-body"><div class="summary mono"><strong style="color:#19c37d">ISSUE SPOTTING</strong><br>Issues identified correctly: offer, acceptance, consideration.<br><span style="color:#f0a0a0">Issues missed: UCC/common law threshold.</span><br><br><strong style="color:#f0c96b">OVERALL SCORE: 3.5/6</strong><br>SESSION SUMMARY appears at the end. Copy it to your Error Log if tracking progress.</div></div></div>
+      <div class="card" style="border-color:#3b2c2c;background:#1d1717;color:#f0c8c8">One essay per chat. Always start a new chat for the next essay.</div>
+    </section>
+  </main>`;
+}
+
+const renderers = [step1, step2, step3, step4, step5];
+function render() {
+  document.getElementById("tabs").innerHTML = steps.map((s, i) =>
+    `<button class="tab ${i === active ? "active" : ""}" onclick="active=${i};render()">${s[0]}: ${s[1]}</button>`
+  ).join("");
+  document.getElementById("app").innerHTML = renderers[active]();
+  document.getElementById("caption").innerHTML = `<span>${steps[active][0]}:</span> ${steps[active][1]}`;
+}
+render();
+</script>
+</body>
+</html>
